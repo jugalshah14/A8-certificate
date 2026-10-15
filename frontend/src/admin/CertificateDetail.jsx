@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import QRCode from 'qrcode';
 import { adminApi, certificateUrl } from '../api.js';
 import { useMeta } from './AdminLayout.jsx';
 import { ErrorBox, formatDate } from './ui.jsx';
+import NfcWriter from './NfcWriter.jsx';
 
 const VERIFY_LABEL = {
   verified: ['ok', 'Verified against the blockchain'],
@@ -14,141 +15,11 @@ const VERIFY_LABEL = {
   unavailable: ['warn', 'Blockchain unreachable'],
 };
 
-const hasWebNfc = typeof window !== 'undefined' && 'NDEFReader' in window;
-
 function download(href, filename) {
   const a = document.createElement('a');
   a.href = href;
   a.download = filename;
   a.click();
-}
-
-/**
- * Writes the certificate link to an NFC tag with Web NFC (Chrome on Android).
- * The tag is read first so its serial number can be stored with the certificate.
- */
-function NfcWriter({ url, onWritten }) {
-  const [state, setState] = useState({ step: 'idle' });
-  const [lock, setLock] = useState(false);
-  const abort = useRef(null);
-
-  useEffect(() => () => abort.current?.abort(), []);
-
-  const start = async () => {
-    abort.current?.abort();
-    const controller = new AbortController();
-    abort.current = controller;
-    setState({ step: 'waiting' });
-    try {
-      const reader = new window.NDEFReader();
-      await reader.scan({ signal: controller.signal });
-      reader.onreadingerror = () => setState({ step: 'waiting', note: 'Could not read that card. Hold it still against the phone.' });
-      reader.onreading = async (event) => {
-        if (controller.signal.aborted) return;
-        reader.onreading = null;
-        try {
-          setState({ step: 'writing' });
-          await reader.write({ records: [{ recordType: 'url', data: url }] }, { signal: controller.signal });
-          if (lock && reader.makeReadOnly) await reader.makeReadOnly({ signal: controller.signal });
-          controller.abort();
-          await onWritten(event.serialNumber || '');
-          setState({ step: 'done', serial: event.serialNumber, locked: lock });
-        } catch (err) {
-          controller.abort();
-          setState({ step: 'error', message: err.message });
-        }
-      };
-    } catch (err) {
-      setState({ step: 'error', message: err.name === 'NotAllowedError' ? 'NFC permission was denied.' : err.message });
-    }
-  };
-
-  const cancel = () => {
-    abort.current?.abort();
-    setState({ step: 'idle' });
-  };
-
-  if (!hasWebNfc) {
-    return (
-      <div className="a-nfc">
-        <b>Write with an NFC app</b>
-        <p className="a-hint" style={{ margin: '4px 0 0' }}>
-          This browser cannot write NFC. Open this page in Chrome on an Android phone to write directly, or use an app such as NXP TagWriter or NFC Tools:
-        </p>
-        <ol>
-          <li>Copy the certificate link above.</li>
-          <li>In the app, write a URL / link record with it to the card.</li>
-          <li>Come back and mark the card as written.</li>
-        </ol>
-        <div className="a-row" style={{ marginTop: 12 }}>
-          <button type="button" className="a-btn small" onClick={() => onWritten('')}>
-            Mark card as written
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="a-nfc">
-      {state.step === 'idle' && (
-        <>
-          <label className="a-check">
-            <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} />
-            Lock the chip after writing (permanent, cannot be rewritten)
-          </label>
-          <div className="a-row" style={{ marginTop: 12 }}>
-            <button type="button" className="a-btn primary" onClick={start}>
-              Write to NFC card
-            </button>
-          </div>
-        </>
-      )}
-      {state.step === 'waiting' && (
-        <div className="a-row">
-          <span className="a-pulse" aria-hidden="true" />
-          <span>Hold the card against the back of this phone…</span>
-          <span className="a-spacer" />
-          <button type="button" className="a-btn small" onClick={cancel}>
-            Cancel
-          </button>
-          {state.note && <small style={{ width: '100%' }}>{state.note}</small>}
-        </div>
-      )}
-      {state.step === 'writing' && (
-        <div className="a-row">
-          <span className="a-pulse" aria-hidden="true" />
-          Writing… keep holding the card.
-        </div>
-      )}
-      {state.step === 'done' && (
-        <div>
-          <div className="a-alert ok" style={{ marginBottom: 10 }}>
-            Card written{state.locked ? ' and locked' : ''}. Tap it with any phone to open the certificate.
-            {state.serial && (
-              <>
-                <br />
-                Chip serial: <code>{state.serial}</code>
-              </>
-            )}
-          </div>
-          <button type="button" className="a-btn small" onClick={() => setState({ step: 'idle' })}>
-            Write another card
-          </button>
-        </div>
-      )}
-      {state.step === 'error' && (
-        <div>
-          <div className="a-alert" style={{ marginBottom: 10 }}>
-            {state.message}
-          </div>
-          <button type="button" className="a-btn small" onClick={start}>
-            Try again
-          </button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function CertificateDetail() {
@@ -289,6 +160,14 @@ export default function CertificateDetail() {
             <dd>
               <code>{cert.id}</code>
             </dd>
+            {cert.card && (
+              <>
+                <dt>Card</dt>
+                <dd>
+                  <Link to={`/admin/cards?event=${cert.eventId}`}>{cert.card.label}</Link> (pre-printed)
+                </dd>
+              </>
+            )}
             <dt>Fingerprint</dt>
             <dd>
               <code>{cert.fingerprint}</code>

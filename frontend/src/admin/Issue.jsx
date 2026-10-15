@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { adminApi } from '../api.js';
 import { ErrorBox, Field } from './ui.jsx';
+import QrScanner from './QrScanner.jsx';
 
 function PhotoInput({ label, hint, file, onChange }) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
@@ -45,6 +46,107 @@ function FieldInput({ field, value, onChange }) {
   return <input {...common} maxLength={200} />;
 }
 
+const CARD_CODE_RE = /\/c\/([A-Za-z0-9]+)\/?(?:[?#].*)?$/;
+const parseCardCode = (input) => {
+  const s = String(input || '').trim();
+  const m = s.match(CARD_CODE_RE);
+  return (m ? m[1] : s).replace(/[^A-Za-z0-9]/g, '');
+};
+
+/** Picks a pre-printed card: scan its QR, type its code, or take the next blank one. */
+function CardPicker({ event, value, onChange }) {
+  const [scanning, setScanning] = useState(false);
+  const [card, setCard] = useState(null);
+  const [problem, setProblem] = useState('');
+  const code = parseCardCode(value);
+
+  useEffect(() => {
+    setCard(null);
+    setProblem('');
+    if (!code) return;
+    let alive = true;
+    const timer = setTimeout(() => {
+      adminApi(`/cards/${code}`)
+        .then((c) => {
+          if (!alive) return;
+          if (c.eventId !== event.id) setProblem(`Card ${c.label} belongs to a different event.`);
+          else if (c.status === 'issued') setProblem(`Card ${c.label} is already issued to ${c.recipientName || 'someone'}.`);
+          else if (c.status === 'void') setProblem(`Card ${c.label} was voided.`);
+          else setCard(c);
+        })
+        .catch((err) => alive && setProblem(err.status === 404 ? `No card with code ${code}.` : err.message));
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [code, event.id]);
+
+  const next = async () => {
+    setProblem('');
+    try {
+      const c = await adminApi(`/events/${event.id}/cards/next`);
+      onChange(c.code);
+    } catch (err) {
+      setProblem(err.message);
+    }
+  };
+
+  const scanned = useCallback(
+    (text) => {
+      setScanning(false);
+      onChange(parseCardCode(text));
+    },
+    [onChange]
+  );
+
+  return (
+    <section className="a-card">
+      <h2>Card</h2>
+      <p className="a-hint">
+        Issuing to a pre-printed card links its QR code and NFC chip to this certificate. Leave empty to get a new link and print it afterwards.
+        {event.cards && ` ${event.cards.blank} blank card${event.cards.blank === 1 ? '' : 's'} left.`}
+      </p>
+      <div className="a-row">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Card code or scanned link"
+          aria-label="Card code"
+          autoComplete="off"
+          style={{ maxWidth: 280 }}
+        />
+        <button type="button" className="a-btn small" onClick={() => setScanning((v) => !v)}>
+          {scanning ? 'Stop scanning' : 'Scan QR'}
+        </button>
+        <button type="button" className="a-btn small" onClick={next} disabled={!event.cards?.blank}>
+          Next blank card
+        </button>
+        {value && (
+          <button type="button" className="a-btn small" onClick={() => onChange('')}>
+            Clear
+          </button>
+        )}
+      </div>
+      {scanning && (
+        <div style={{ marginTop: 12 }}>
+          <QrScanner onResult={scanned} onClose={() => setScanning(false)} />
+        </div>
+      )}
+      {card && (
+        <div className="a-alert ok" style={{ marginTop: 12, marginBottom: 0 }}>
+          Card <b>{card.label}</b> is blank and ready.
+        </div>
+      )}
+      {problem && (
+        <div className="a-alert" style={{ marginTop: 12, marginBottom: 0 }}>
+          {problem}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Issue() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -55,6 +157,7 @@ export default function Issue() {
   const [values, setValues] = useState({});
   const [files, setFiles] = useState({ photo: null, cardFront: null, cardBack: null });
   const [coupon, setCoupon] = useState('');
+  const [cardCode, setCardCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -76,6 +179,7 @@ export default function Issue() {
   const pickEvent = (id) => {
     setEventId(id);
     setValues({});
+    setCardCode('');
     setParams({ event: id }, { replace: true });
   };
 
@@ -86,7 +190,7 @@ export default function Issue() {
     try {
       const form = new FormData();
       const shown = Object.fromEntries(fields.map((f) => [f.key, values[f.key] || '']));
-      form.append('data', JSON.stringify({ eventId, roleKey, recipientName: name, values: shown, couponCode: coupon }));
+      form.append('data', JSON.stringify({ eventId, roleKey, recipientName: name, values: shown, couponCode: coupon, cardCode: parseCardCode(cardCode) || undefined }));
       for (const [key, file] of Object.entries(files)) if (file) form.append(key, file);
       const cert = await adminApi('/certificates', { method: 'POST', form });
       navigate(`/admin/certificates/${cert.id}?issued=1`);
@@ -163,6 +267,8 @@ export default function Issue() {
             </div>
           </section>
         )}
+
+        {role && event.cards?.total > 0 && <CardPicker event={event} value={cardCode} onChange={setCardCode} />}
 
         {role && (
           <section className="a-card">

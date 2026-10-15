@@ -47,6 +47,7 @@ export default function AdminLayout() {
               </NavLink>
               <NavLink to="/admin/issue">Issue</NavLink>
               <NavLink to="/admin/certificates">Certificates</NavLink>
+              <NavLink to="/admin/cards">Cards</NavLink>
               {isAdmin && <NavLink to="/admin/team">Team</NavLink>}
             </nav>
             {chain && (

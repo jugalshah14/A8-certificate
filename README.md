@@ -51,6 +51,18 @@ Set up Google sign-in once:
 
 `ADMIN_PASSWORD` stays as a fallback admin sign-in so you can't lock yourself out. Once you have a Google admin, leave it empty to turn it off. The team always keeps at least one active admin, and nobody can remove their own admin access. Role changes and removals take effect on the person's next request.
 
+## Pre-printed cards
+
+The **Cards** page makes blank QR and NFC cards for an event, so they can be printed before the day:
+
+1. An admin picks the event and makes a batch (e.g. 200 cards). Cards are numbered `#0001`, `#0002`… per event, each with its own code.
+2. **Print sheet** opens an A4 sheet of QR codes with the card number and code; **CSV** gives the same list (number, code, link) for a print shop. Use **QR / NFC** on a card to write its NFC chip.
+3. At the booth, the **Issue** form has a **Card** section: scan the card's QR with the camera, type its code, or take the **Next blank card**. Issuing links the card to the certificate, so its printed QR and NFC chip open it.
+
+A card is issued once and only for its own event. Before it's issued, its link shows "Not issued yet". An admin can void a blank card (lost or misprinted); its link then says the card is not valid. Issued cards can't be voided: revoke the certificate instead.
+
+Set `PUBLIC_BASE_URL` before printing. The link on a printed card can't be changed afterwards.
+
 ## Demo: issue, tap, scan
 
 A phone has to be able to reach the links you write to cards, and Web NFC writing only works over HTTPS. A tunnel gives you both:

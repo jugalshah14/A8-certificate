@@ -37,6 +37,7 @@ export default function Events() {
               <div className="a-eventMeta">{[e.round, e.date, e.venue].filter(Boolean).join(' · ')}</div>
               <div className="a-eventMeta">
                 {e.certificateCount} certificate{e.certificateCount === 1 ? '' : 's'} issued
+                {e.cards?.total > 0 && ` · ${e.cards.blank} of ${e.cards.total} cards blank`}
               </div>
               <div className="a-roles">
                 {e.roles.map((r) => (
@@ -51,6 +52,9 @@ export default function Events() {
                 </Link>
                 <Link to={`/admin/certificates?event=${e.id}`} className="a-btn small">
                   Certificates
+                </Link>
+                <Link to={`/admin/cards?event=${e.id}`} className="a-btn small">
+                  Cards
                 </Link>
                 {isAdmin && (
                   <>

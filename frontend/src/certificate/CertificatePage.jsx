@@ -97,7 +97,7 @@ export default function CertificatePage() {
     let alive = true;
     publicApi(`/public/certificates/${encodeURIComponent(id)}`)
       .then((data) => alive && setState({ data }))
-      .catch((err) => alive && setState({ error: err.status === 404 ? 'not_found' : 'failed' }));
+      .catch((err) => alive && setState({ error: err.data?.card ? 'card' : err.status === 404 ? 'not_found' : 'failed', card: err.data?.card }));
     return () => {
       alive = false;
     };
@@ -120,6 +120,22 @@ export default function CertificatePage() {
 
   if (state.loading) {
     return <div className="page state" style={themeStyle(defaultTheme)} aria-busy="true" />;
+  }
+  if (state.error === 'card') {
+    const card = state.card;
+    return (
+      <div className="page state" style={themeStyle(card.theme || defaultTheme)}>
+        <div>
+          {card.emblem && <img src={card.emblem} alt="" style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 16px' }} />}
+          <h1>{card.status === 'void' ? 'This card is not valid' : 'Not issued yet'}</h1>
+          <p>
+            {card.status === 'void'
+              ? `Card ${card.label}${card.eventName ? ` for ${card.eventName}` : ''} was cancelled by the organiser.`
+              : `Card ${card.label}${card.eventName ? ` for ${card.eventName}` : ''} has no certificate on it yet. Tap or scan it again after it is handed to you.`}
+          </p>
+        </div>
+      </div>
+    );
   }
   if (state.error) {
     return (

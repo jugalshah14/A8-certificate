@@ -53,6 +53,28 @@ db.exec(`
   );
 `);
 
+// Pre-printed cards: blank QR/NFC cards made for an event before anyone is
+// issued a certificate. A card's code becomes the certificate id when assigned.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cards (
+    code            TEXT PRIMARY KEY,
+    event_id        TEXT NOT NULL REFERENCES events(id),
+    serial          INTEGER NOT NULL,
+    batch_id        TEXT NOT NULL,
+    batch_note      TEXT,
+    created_at      TEXT NOT NULL,
+    created_by      TEXT,
+    certificate_id  TEXT UNIQUE,
+    assigned_at     TEXT,
+    assigned_by     TEXT,
+    nfc_uid         TEXT,
+    nfc_written_at  TEXT,
+    voided_at       TEXT,
+    UNIQUE (event_id, serial)
+  );
+  CREATE INDEX IF NOT EXISTS cards_event ON cards(event_id, serial);
+`);
+
 // Columns added after the first release.
 const certificateColumns = db.prepare('PRAGMA table_info(certificates)').all().map((c) => c.name);
 if (!certificateColumns.includes('issued_by')) db.exec('ALTER TABLE certificates ADD COLUMN issued_by TEXT');

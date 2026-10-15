@@ -10,6 +10,8 @@ import Issue from './admin/Issue.jsx';
 import Certificates from './admin/Certificates.jsx';
 import CertificateDetail from './admin/CertificateDetail.jsx';
 import Team from './admin/Team.jsx';
+import Cards from './admin/Cards.jsx';
+import CardSheet from './admin/CardSheet.jsx';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
@@ -18,6 +20,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/c/:id" element={<CertificatePage />} />
         <Route path="/admin/login" element={<Login />} />
+        <Route path="/admin/cards/print" element={<CardSheet />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Events />} />
           <Route path="events/new" element={<EventEditor />} />
@@ -25,6 +28,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="issue" element={<Issue />} />
           <Route path="certificates" element={<Certificates />} />
           <Route path="certificates/:id" element={<CertificateDetail />} />
+          <Route path="cards" element={<Cards />} />
           <Route path="team" element={<Team />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />

@@ -13,6 +13,7 @@ import {
   verifyCertificate,
 } from './certificates.js';
 import { saveMedia, upload } from './media.js';
+import { listCards, listBatches, getCard, createBatch, voidCard, recordCardNfc, nextBlankCard, cardStats, MAX_BATCH } from './cards.js';
 import { getChain } from './chain.js';
 
 export const api = Router();
@@ -41,8 +42,18 @@ api.post('/auth/google', async (req, res) => {
 
 api.get('/public/certificates/:id', async (req, res) => {
   const cert = getCertificate(req.params.id);
-  if (!cert) return notFound(res, 'Certificate');
+  if (!cert) {
+    // A pre-printed card that has not been issued yet.
+    const card = getCard(req.params.id);
+    if (!card) return notFound(res, 'Certificate');
+    const ev = getEvent(card.eventId);
+    return res.status(404).json({
+      error: card.status === 'void' ? 'This card is no longer valid.' : 'This card has not been issued yet.',
+      card: { label: card.label, status: card.status, eventName: ev?.name || '', theme: ev?.theme || null, emblem: ev?.images.emblem || '' },
+    });
+  }
   const event = getEvent(cert.eventId);
+  const card = getCard(cert.id);
   const p = cert.payload;
   // Role wording comes from the event's current config; the facts that were
   // fingerprinted come from the frozen payload.
@@ -58,7 +69,8 @@ api.get('/public/certificates/:id', async (req, res) => {
       fields: p.fields.filter((f) => f.display !== 'hidden'),
       media: p.media,
       couponCode: cert.couponCode,
-      nfcSealed: Boolean(cert.nfc.writtenAt),
+      nfcSealed: Boolean(cert.nfc.writtenAt || card?.nfc.writtenAt),
+      cardLabel: card?.label || null,
     },
     event: {
       ...p.event,
@@ -103,7 +115,7 @@ api.get('/meta', async (req, res) => {
   });
 });
 
-api.get('/events', (req, res) => res.json(listEvents()));
+api.get('/events', (req, res) => res.json(listEvents().map((e) => ({ ...e, cards: cardStats(e.id) }))));
 
 api.get('/events/:id', (req, res) => {
   const event = getEvent(req.params.id);
@@ -117,7 +129,7 @@ api.get('/certificates', (req, res) => {
 api.get('/certificates/:id', async (req, res) => {
   const cert = getCertificate(req.params.id);
   if (!cert) return notFound(res, 'Certificate');
-  res.json({ ...cert, verification: await verifyCertificate(cert) });
+  res.json({ ...cert, card: getCard(cert.id), verification: await verifyCertificate(cert) });
 });
 
 const certificateFiles = upload.fields([
@@ -142,6 +154,22 @@ api.post('/certificates/:id/anchor', async (req, res) => res.json(await anchorCe
 
 api.post('/certificates/:id/nfc', (req, res) => res.json(recordNfcWrite(req.params.id, req.body?.uid)));
 
+api.get('/cards', (req, res) => res.json(listCards({ eventId: req.query.eventId, batchId: req.query.batchId, status: req.query.status })));
+
+api.get('/cards/:code', (req, res) => {
+  const card = getCard(req.params.code);
+  card ? res.json(card) : notFound(res, 'Card');
+});
+
+api.post('/cards/:code/nfc', (req, res) => res.json(recordCardNfc(req.params.code, req.body?.uid)));
+
+api.get('/events/:id/batches', (req, res) => res.json({ batches: listBatches(req.params.id), stats: cardStats(req.params.id), maxBatch: MAX_BATCH }));
+
+api.get('/events/:id/cards/next', (req, res) => {
+  const card = nextBlankCard(req.params.id);
+  card ? res.json(card) : res.status(404).json({ error: 'No blank cards left for this event.' });
+});
+
 // ---------- admins only ----------
 
 api.use(requireAdmin);
@@ -157,6 +185,10 @@ api.put('/events/:id', (req, res) => {
   const event = updateEvent(req.params.id, req.body);
   event ? res.json(event) : notFound(res, 'Event');
 });
+
+api.post('/events/:id/cards', (req, res) => res.status(201).json(createBatch(req.params.id, req.body || {}, req.user.email || req.user.name)));
+
+api.post('/cards/:code/void', (req, res) => res.json(voidCard(req.params.code)));
 
 api.post('/certificates/:id/revoke', async (req, res) => res.json(await revokeCertificate(req.params.id)));
 

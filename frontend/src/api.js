@@ -32,6 +32,7 @@ async function request(path, { method = 'GET', body, form, token } = {}) {
     const err = new Error(data.error || `Request failed (${res.status})`);
     err.status = res.status;
     err.problems = data.problems;
+    err.data = data;
     throw err;
   }
   return data;

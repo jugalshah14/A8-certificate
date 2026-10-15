@@ -1,17 +1,9 @@
-import crypto from 'node:crypto';
 import { db, json } from './db.js';
 import { getEvent, fieldsForRole } from './events.js';
 import { saveMedia, hashOfMedia } from './media.js';
 import { fingerprintOf, chainIdOf } from './fingerprint.js';
 import { issueOnChain, readOnChain, revokeOnChain, explorerTxUrl } from './chain.js';
-
-// No 0/O or 1/l/I, so ids stay readable when printed on a card.
-const ID_ALPHABET = '23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
-
-function newId(length = 10) {
-  const bytes = crypto.randomBytes(length);
-  return Array.from(bytes, (b) => ID_ALPHABET[b % ID_ALPHABET.length]).join('');
-}
+import { assignCard, claimableCard, newCode } from './cards.js';
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
@@ -80,11 +72,13 @@ export function listCertificates({ eventId, q } = {}) {
  * on-chain. If the chain is unreachable the certificate stays "pending" and
  * can be anchored later.
  */
-export async function issueCertificate({ eventId, roleKey, recipientName, values = {}, couponCode }, files = {}, actor = null) {
+export async function issueCertificate({ eventId, roleKey, recipientName, values = {}, couponCode, cardCode }, files = {}, actor = null) {
   const event = getEvent(eventId);
   if (!event) throw httpError(404, 'Event not found.');
   const role = event.roles.find((r) => r.key === roleKey);
   if (!role) throw httpError(400, 'Pick a role for this event.');
+  // A pre-printed card lends its code to the certificate, so the card's QR and NFC link open it.
+  const card = cardCode ? claimableCard(cardCode, event.id) : null;
 
   const name = String(recipientName || '').trim().replace(/\s+/g, ' ');
   if (!name) throw httpError(400, 'Recipient name is required.');
@@ -103,7 +97,7 @@ export async function issueCertificate({ eventId, roleKey, recipientName, values
     media[key] = file ? saveMedia(file.buffer, file.mimetype) : null;
   }
 
-  const id = newId();
+  const id = card ? card.code : newCode();
   const issuedAt = new Date().toISOString();
   const payload = {
     v: 1,
@@ -119,10 +113,19 @@ export async function issueCertificate({ eventId, roleKey, recipientName, values
   const fingerprint = fingerprintOf(payload);
   const coupon = String(couponCode || '').trim().slice(0, 40) || event.authSponsor?.code || null;
 
-  db.prepare(
-    `INSERT INTO certificates (id, event_id, role_key, recipient_name, payload, fingerprint, coupon_code, issued_at, issued_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, event.id, role.key, name, json.stringify(payload), fingerprint, coupon, issuedAt, actor ? actor.email || actor.name : null);
+  const by = actor ? actor.email || actor.name : null;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(
+      `INSERT INTO certificates (id, event_id, role_key, recipient_name, payload, fingerprint, coupon_code, issued_at, issued_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, event.id, role.key, name, json.stringify(payload), fingerprint, coupon, issuedAt, by);
+    if (card) assignCard(card.code, id, by);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 
   return anchorCertificate(id);
 }
