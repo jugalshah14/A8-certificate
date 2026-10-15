@@ -5,7 +5,7 @@ Monorepo with frontend and backend.
 - `frontend/` — React + Vite
 - `backend/` — Node.js + Express API
 
-Requires Node.js 20+.
+Requires Node.js 24 (see `.nvmrc`; with nvm run `nvm use 24`).
 
 ## Run
 
