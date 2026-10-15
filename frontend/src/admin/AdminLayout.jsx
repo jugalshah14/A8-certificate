@@ -30,6 +30,8 @@ export default function AdminLayout() {
   };
 
   const chain = meta?.chain;
+  const user = meta?.user;
+  const isAdmin = user?.role === 'admin';
 
   return (
     <MetaContext.Provider value={meta}>
@@ -45,10 +47,19 @@ export default function AdminLayout() {
               </NavLink>
               <NavLink to="/admin/issue">Issue</NavLink>
               <NavLink to="/admin/certificates">Certificates</NavLink>
+              {isAdmin && <NavLink to="/admin/team">Team</NavLink>}
             </nav>
             {chain && (
               <span className={`a-pill a-chain ${chain.connected ? 'ok' : 'bad'}`} title={chain.connected ? chain.contract : chain.error}>
                 {chain.connected ? chain.name : 'Blockchain offline'}
+              </span>
+            )}
+            {user && (
+              <span className="a-user" title={user.email}>
+                {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : <span className="a-avatar">{(user.name || user.email || 'A')[0].toUpperCase()}</span>}
+                <span>
+                  {user.name || user.email} · {isAdmin ? 'Admin' : 'Employee'}
+                </span>
               </span>
             )}
             <button type="button" className="a-btn small" onClick={signOut}>

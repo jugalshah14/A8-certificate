@@ -6,6 +6,7 @@ import { config } from './config.js';
 import { api } from './routes.js';
 import { seedIfEmpty } from './seed.js';
 import { getChain } from './chain.js';
+import { bootstrapAdmin } from './users.js';
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.use((err, req, res, next) => {
 });
 
 seedIfEmpty();
+const firstAdmin = bootstrapAdmin(config.bootstrapAdminEmail);
+if (firstAdmin) console.log(`Added first admin ${firstAdmin.email}`);
 
 app.listen(config.port, () => {
   console.log(`Backend listening on http://localhost:${config.port}`);

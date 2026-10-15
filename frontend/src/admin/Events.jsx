@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { adminApi } from '../api.js';
+import { useMeta } from './AdminLayout.jsx';
 import { ErrorBox } from './ui.jsx';
 
 export default function Events() {
   const [events, setEvents] = useState(null);
   const [error, setError] = useState(null);
+  const isAdmin = useMeta()?.user?.role === 'admin';
 
   useEffect(() => {
     adminApi('/events').then(setEvents, setError);
@@ -18,9 +20,11 @@ export default function Events() {
           <h1>Events</h1>
           <p>Each event sets its own roles, form fields, look and sponsors.</p>
         </div>
-        <Link to="/admin/events/new" className="a-btn primary">
-          New event
-        </Link>
+        {isAdmin && (
+          <Link to="/admin/events/new" className="a-btn primary">
+            New event
+          </Link>
+        )}
       </div>
       <ErrorBox error={error} />
       {events && events.length === 0 && <div className="a-card a-empty">No events yet. Create one to start issuing certificates.</div>}
@@ -48,12 +52,16 @@ export default function Events() {
                 <Link to={`/admin/certificates?event=${e.id}`} className="a-btn small">
                   Certificates
                 </Link>
-                <Link to={`/admin/events/${e.id}`} className="a-btn small">
-                  Edit
-                </Link>
-                <Link to={`/admin/events/new?from=${e.id}`} className="a-btn small">
-                  Duplicate
-                </Link>
+                {isAdmin && (
+                  <>
+                    <Link to={`/admin/events/${e.id}`} className="a-btn small">
+                      Edit
+                    </Link>
+                    <Link to={`/admin/events/new?from=${e.id}`} className="a-btn small">
+                      Duplicate
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </article>

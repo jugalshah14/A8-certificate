@@ -25,13 +25,31 @@ npm run backend                    # API on :5000; deploys the contract on first
 npm run frontend                   # UI on :5173
 ```
 
-Open http://localhost:5173/admin and sign in with the password from `ADMIN_PASSWORD` (default `admin`). The sample event, *Gujarat Kabaddi Championship 2026*, is created on first start from the reference templates.
+Open http://localhost:5173/admin and sign in with Google (see below) or with the password from `ADMIN_PASSWORD` (default `admin`). The sample event, *Gujarat Kabaddi Championship 2026*, is created on first start from the reference templates.
 
 Tests: `npm test`.
 
 ### Single-server mode
 
 `npm run build && npm start` serves the built UI from the backend, so the admin, the API and the certificate links all use one address on port 5000. This is the easiest setup for a phone demo.
+
+## Team and Google sign-in
+
+People sign in with Google. Only people an admin has added on the **Team** page can get in.
+
+| Role | Can |
+|---|---|
+| Admin | Everything: create and edit events, add or remove people, issue, revoke |
+| Employee | Issue certificates, view them, download QR codes, write NFC cards |
+
+Set up Google sign-in once:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an **OAuth client ID** of type **Web application**.
+2. Under **Authorised JavaScript origins**, add `http://localhost:5173`, `http://localhost:5000` and any HTTPS address you use (tunnel or production). Google does not accept plain-HTTP LAN addresses.
+3. In `backend/.env`, set `GOOGLE_CLIENT_ID=<the client id>` and `BOOTSTRAP_ADMIN_EMAIL=<your Google email>`, then restart the backend. The bootstrap email becomes the first admin if the team is empty.
+4. Sign in with Google and add your colleagues on **Team → Add person**.
+
+`ADMIN_PASSWORD` stays as a fallback admin sign-in so you can't lock yourself out. Once you have a Google admin, leave it empty to turn it off. The team always keeps at least one active admin, and nobody can remove their own admin access. Role changes and removals take effect on the person's next request.
 
 ## Demo: issue, tap, scan
 
@@ -86,5 +104,5 @@ The five templates became one themeable page. The kabaddi look is just the seede
 ### Limits and next steps
 
 - **Copied cards.** A plain NTAG chip holding a URL can be copied. Hardware-bound authenticity would need NTAG 424 DNA with SUN messages: the chip signs every tap, and the server checks the signature. The data model is already set up for that, because the chip serial is saved with the certificate.
-- **Admin sign-in** is one shared password with signed tokens. Real use needs per-user accounts and an audit log.
+- **Audit trail** records who issued each certificate. A full log of edits, revocations and team changes is a next step.
 - **Local chain resets.** If you restart `npm run chain`, the local chain starts empty. The backend redeploys the contract, and certificates issued before the restart show *not found on the blockchain*. A public testnet keeps them.

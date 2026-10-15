@@ -13,8 +13,14 @@ export const config = {
   // so set it to your LAN address or public tunnel URL for a real demo.
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, ''),
 
-  adminPassword: process.env.ADMIN_PASSWORD || 'admin',
+  // Fallback sign-in that acts as an admin. Empty turns it off (use Google only).
+  adminPassword: process.env.ADMIN_PASSWORD ?? 'admin',
   authSecret: process.env.AUTH_SECRET || 'dev-only-secret-change-me',
+
+  // Google sign-in. Create an OAuth client (Web application) in Google Cloud.
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  // Added as the first admin when the team is empty.
+  bootstrapAdminEmail: process.env.BOOTSTRAP_ADMIN_EMAIL || '',
 
   dataDir,
   dbFile: path.join(dataDir, 'a8.sqlite'),
@@ -34,6 +40,6 @@ export const config = {
 
 if (process.env.NODE_ENV === 'production') {
   if (config.adminPassword === 'admin' || config.authSecret === 'dev-only-secret-change-me') {
-    throw new Error('Set ADMIN_PASSWORD and AUTH_SECRET in production.');
+    throw new Error('Set AUTH_SECRET, and change or empty ADMIN_PASSWORD, in production.');
   }
 }

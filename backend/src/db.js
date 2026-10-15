@@ -38,7 +38,24 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS certificates_event ON certificates(event_id, issued_at);
+
+  CREATE TABLE IF NOT EXISTS users (
+    id             TEXT PRIMARY KEY,
+    email          TEXT NOT NULL UNIQUE,
+    name           TEXT NOT NULL DEFAULT '',
+    role           TEXT NOT NULL CHECK (role IN ('admin', 'employee')),
+    active         INTEGER NOT NULL DEFAULT 1,
+    google_sub     TEXT UNIQUE,
+    picture        TEXT,
+    added_by       TEXT,
+    created_at     TEXT NOT NULL,
+    last_login_at  TEXT
+  );
 `);
+
+// Columns added after the first release.
+const certificateColumns = db.prepare('PRAGMA table_info(certificates)').all().map((c) => c.name);
+if (!certificateColumns.includes('issued_by')) db.exec('ALTER TABLE certificates ADD COLUMN issued_by TEXT');
 
 export const json = {
   parse: (s) => (s == null ? null : JSON.parse(s)),

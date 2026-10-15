@@ -82,6 +82,14 @@ export default function EventEditor() {
     }, setError);
   }, [id, from]);
 
+  if (meta?.user && meta.user.role !== 'admin') {
+    return (
+      <main className="a-main a-narrow">
+        <div className="a-alert">Only admins can create or edit events.</div>
+      </main>
+    );
+  }
+
   if (!draft) {
     return (
       <main className="a-main a-narrow">

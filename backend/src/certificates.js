@@ -51,6 +51,7 @@ function rowToCertificate(row) {
     },
     nfc: { uid: row.nfc_uid, writtenAt: row.nfc_written_at },
     revokedAt: row.revoked_at,
+    issuedBy: row.issued_by,
   };
 }
 
@@ -79,7 +80,7 @@ export function listCertificates({ eventId, q } = {}) {
  * on-chain. If the chain is unreachable the certificate stays "pending" and
  * can be anchored later.
  */
-export async function issueCertificate({ eventId, roleKey, recipientName, values = {}, couponCode }, files = {}) {
+export async function issueCertificate({ eventId, roleKey, recipientName, values = {}, couponCode }, files = {}, actor = null) {
   const event = getEvent(eventId);
   if (!event) throw httpError(404, 'Event not found.');
   const role = event.roles.find((r) => r.key === roleKey);
@@ -119,9 +120,9 @@ export async function issueCertificate({ eventId, roleKey, recipientName, values
   const coupon = String(couponCode || '').trim().slice(0, 40) || event.authSponsor?.code || null;
 
   db.prepare(
-    `INSERT INTO certificates (id, event_id, role_key, recipient_name, payload, fingerprint, coupon_code, issued_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, event.id, role.key, name, json.stringify(payload), fingerprint, coupon, issuedAt);
+    `INSERT INTO certificates (id, event_id, role_key, recipient_name, payload, fingerprint, coupon_code, issued_at, issued_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, event.id, role.key, name, json.stringify(payload), fingerprint, coupon, issuedAt, actor ? actor.email || actor.name : null);
 
   return anchorCertificate(id);
 }

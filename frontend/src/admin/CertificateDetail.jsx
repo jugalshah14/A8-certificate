@@ -326,7 +326,10 @@ export default function CertificateDetail() {
               </>
             )}
             <dt>Issued</dt>
-            <dd>{formatDate(cert.issuedAt)}</dd>
+            <dd>
+              {formatDate(cert.issuedAt)}
+              {cert.issuedBy && ` by ${cert.issuedBy}`}
+            </dd>
             {cert.revokedAt && (
               <>
                 <dt>Revoked</dt>
@@ -343,7 +346,7 @@ export default function CertificateDetail() {
             {cert.couponCode && <FieldRow label="Coupon code" value={cert.couponCode} />}
           </dl>
 
-          {!cert.revokedAt && (
+          {!cert.revokedAt && meta?.user?.role === 'admin' && (
             <div className="a-row" style={{ marginTop: 22 }}>
               <button
                 type="button"

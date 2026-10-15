@@ -9,6 +9,7 @@ import EventEditor from './admin/EventEditor.jsx';
 import Issue from './admin/Issue.jsx';
 import Certificates from './admin/Certificates.jsx';
 import CertificateDetail from './admin/CertificateDetail.jsx';
+import Team from './admin/Team.jsx';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="issue" element={<Issue />} />
           <Route path="certificates" element={<Certificates />} />
           <Route path="certificates/:id" element={<CertificateDetail />} />
+          <Route path="team" element={<Team />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

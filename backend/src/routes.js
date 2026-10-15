@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { config } from './config.js';
-import { checkPassword, createToken, requireAdmin } from './auth.js';
+import { checkPassword, createToken, requireAdmin, requireUser, verifyGoogleCredential, PASSWORD_ADMIN } from './auth.js';
+import { listUsers, addUser, updateUser, removeUser, signInWithGoogle, ROLES } from './users.js';
 import { listEvents, getEvent, createEvent, updateEvent, TIERS, FIELD_TYPES, FIELD_DISPLAYS, HEADING_FONTS } from './events.js';
 import {
   issueCertificate,
@@ -20,9 +21,20 @@ const notFound = (res, what) => res.status(404).json({ error: `${what} not found
 
 api.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+const session = (user) => ({ token: createToken(user.id), user });
+
+api.get('/auth/options', (req, res) => {
+  res.json({ googleClientId: config.googleClientId || null, passwordLogin: Boolean(config.adminPassword) });
+});
+
 api.post('/auth/login', (req, res) => {
   if (!checkPassword(req.body?.password)) return res.status(401).json({ error: 'Wrong password.' });
-  res.json({ token: createToken() });
+  res.json(session(PASSWORD_ADMIN));
+});
+
+api.post('/auth/google', async (req, res) => {
+  const account = await verifyGoogleCredential(req.body?.credential);
+  res.json(session(signInWithGoogle(account)));
 });
 
 // ---------- public ----------
@@ -65,9 +77,11 @@ api.get('/public/config', (req, res) => {
   res.json({ publicBaseUrl: config.publicBaseUrl || null });
 });
 
-// ---------- admin ----------
+// ---------- signed in: admins and employees ----------
 
-api.use(requireAdmin);
+api.use(requireUser);
+
+api.get('/me', (req, res) => res.json(req.user));
 
 api.get('/meta', async (req, res) => {
   let chain;
@@ -77,25 +91,22 @@ api.get('/meta', async (req, res) => {
   } catch (err) {
     chain = { connected: false, error: err.shortMessage || err.message };
   }
-  res.json({ chain, publicBaseUrl: config.publicBaseUrl || null, tiers: TIERS, fieldTypes: FIELD_TYPES, fieldDisplays: FIELD_DISPLAYS, headingFonts: HEADING_FONTS });
-});
-
-api.post('/uploads', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
-  res.json(saveMedia(req.file.buffer, req.file.mimetype));
+  res.json({
+    user: req.user,
+    chain,
+    publicBaseUrl: config.publicBaseUrl || null,
+    tiers: TIERS,
+    fieldTypes: FIELD_TYPES,
+    fieldDisplays: FIELD_DISPLAYS,
+    headingFonts: HEADING_FONTS,
+    roles: ROLES,
+  });
 });
 
 api.get('/events', (req, res) => res.json(listEvents()));
 
 api.get('/events/:id', (req, res) => {
   const event = getEvent(req.params.id);
-  event ? res.json(event) : notFound(res, 'Event');
-});
-
-api.post('/events', (req, res) => res.status(201).json(createEvent(req.body)));
-
-api.put('/events/:id', (req, res) => {
-  const event = updateEvent(req.params.id, req.body);
   event ? res.json(event) : notFound(res, 'Event');
 });
 
@@ -123,12 +134,42 @@ api.post('/certificates', certificateFiles, async (req, res) => {
   } catch {
     return res.status(400).json({ error: 'Invalid form data.' });
   }
-  const cert = await issueCertificate(data, req.files || {});
+  const cert = await issueCertificate(data, req.files || {}, req.user);
   res.status(201).json(cert);
 });
 
 api.post('/certificates/:id/anchor', async (req, res) => res.json(await anchorCertificate(req.params.id)));
 
+api.post('/certificates/:id/nfc', (req, res) => res.json(recordNfcWrite(req.params.id, req.body?.uid)));
+
+// ---------- admins only ----------
+
+api.use(requireAdmin);
+
+api.post('/uploads', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  res.json(saveMedia(req.file.buffer, req.file.mimetype));
+});
+
+api.post('/events', (req, res) => res.status(201).json(createEvent(req.body)));
+
+api.put('/events/:id', (req, res) => {
+  const event = updateEvent(req.params.id, req.body);
+  event ? res.json(event) : notFound(res, 'Event');
+});
+
 api.post('/certificates/:id/revoke', async (req, res) => res.json(await revokeCertificate(req.params.id)));
 
-api.post('/certificates/:id/nfc', (req, res) => res.json(recordNfcWrite(req.params.id, req.body?.uid)));
+api.get('/users', (req, res) => res.json(listUsers()));
+
+api.post('/users', (req, res) => res.status(201).json(addUser(req.body || {}, req.user.email || req.user.name)));
+
+api.patch('/users/:id', (req, res) => {
+  const { name, role, active } = req.body || {};
+  res.json(updateUser(req.params.id, { name, role, active: active === undefined ? undefined : Boolean(active) }, req.user));
+});
+
+api.delete('/users/:id', (req, res) => {
+  removeUser(req.params.id, req.user);
+  res.status(204).end();
+});
