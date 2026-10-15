@@ -1,0 +1,63 @@
+import { createContext, useContext, useEffect, useState } from 'react';
+import { Navigate, NavLink, Outlet, useNavigate } from 'react-router';
+import { adminApi, auth } from '../api.js';
+import './admin.css';
+
+const MetaContext = createContext(null);
+export const useMeta = () => useContext(MetaContext);
+
+export default function AdminLayout() {
+  const navigate = useNavigate();
+  const [meta, setMeta] = useState(null);
+
+  useEffect(() => {
+    if (!auth.token) return;
+    let alive = true;
+    const load = () => adminApi('/meta').then((m) => alive && setMeta(m)).catch(() => {});
+    load();
+    const timer = setInterval(load, 15000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  if (!auth.token) return <Navigate to="/admin/login" replace />;
+
+  const signOut = () => {
+    auth.set(null);
+    navigate('/admin/login');
+  };
+
+  const chain = meta?.chain;
+
+  return (
+    <MetaContext.Provider value={meta}>
+      <div className="a-root">
+        <header className="a-bar">
+          <div className="a-barIn">
+            <NavLink to="/admin" className="a-brand">
+              AUTHENTIC8
+            </NavLink>
+            <nav className="a-nav" aria-label="Admin">
+              <NavLink to="/admin" end>
+                Events
+              </NavLink>
+              <NavLink to="/admin/issue">Issue</NavLink>
+              <NavLink to="/admin/certificates">Certificates</NavLink>
+            </nav>
+            {chain && (
+              <span className={`a-pill a-chain ${chain.connected ? 'ok' : 'bad'}`} title={chain.connected ? chain.contract : chain.error}>
+                {chain.connected ? chain.name : 'Blockchain offline'}
+              </span>
+            )}
+            <button type="button" className="a-btn small" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
+        </header>
+        <Outlet />
+      </div>
+    </MetaContext.Provider>
+  );
+}

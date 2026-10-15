@@ -1,0 +1,197 @@
+{
+  "compiler": "0.8.37+commit.f401782d.Emscripten.clang",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyIssued",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyRevoked",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotIssuer",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotOwner",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "fingerprint",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateIssued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "issuer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "allowed",
+          "type": "bool"
+        }
+      ],
+      "name": "IssuerSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "get",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "fingerprint",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "issuedAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "revokedAt",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "fingerprint",
+          "type": "bytes32"
+        }
+      ],
+      "name": "issue",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "issuers",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "revoke",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "issuer",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "allowed",
+          "type": "bool"
+        }
+      ],
+      "name": "setIssuer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b505f80546001600160a01b03191633908117825580825260016020818152604093849020805460ff191683179055925190815290917fc6aeabbc4fc4eb208b2b4cec7249245167cb6191c47e2e6f82a3cd59a89ce7e1910160405180910390a26104ec8061007b5f395ff3fe608060405234801561000f575f5ffd5b5060043610610060575f3560e01c806338a7543e14610064578063495289be1461009b5780638da5cb5b146100b05780638eaa6ac0146100da578063b75c7dc614610158578063c359febb1461016b575b5f5ffd5b610086610072366004610426565b60016020525f908152604090205460ff1681565b60405190151581526020015b60405180910390f35b6100ae6100a9366004610446565b61017e565b005b5f546100c2906001600160a01b031681565b6040516001600160a01b039091168152602001610092565b6101326100e836600461047f565b5f818152600260209081526040918290208251606081018452815480825260019092015467ffffffffffffffff808216948301859052600160401b90910416930183905293909250565b6040805193845267ffffffffffffffff9283166020850152911690820152606001610092565b6100ae61016636600461047f565b610207565b6100ae610179366004610496565b610304565b5f546001600160a01b031633146101a8576040516330cd747160e01b815260040160405180910390fd5b6001600160a01b0382165f81815260016020908152604091829020805460ff191685151590811790915591519182527fc6aeabbc4fc4eb208b2b4cec7249245167cb6191c47e2e6f82a3cd59a89ce7e191015b60405180910390a25050565b335f9081526001602052604090205460ff16610236576040516354ec506360e01b815260040160405180910390fd5b5f8181526002602052604081206001810154909167ffffffffffffffff90911690036102755760405163c5723b5160e01b815260040160405180910390fd5b6001810154600160401b900467ffffffffffffffff16156102a95760405163905e710760e01b815260040160405180910390fd5b6001810180546fffffffffffffffff00000000000000001916600160401b4267ffffffffffffffff160217905560405182907f44d80a438cb4fa3b5aedbe551ce3d9382e37f446917b783e1dee70a03b4180e3905f90a25050565b335f9081526001602052604090205460ff16610333576040516354ec506360e01b815260040160405180910390fd5b5f8281526002602052604090206001015467ffffffffffffffff161561036c5760405163031a394360e61b815260040160405180910390fd5b6040805160608101825282815267ffffffffffffffff42811660208084019182525f84860181815288825260029092528590209351845590516001909301805491518316600160401b026fffffffffffffffffffffffffffffffff1990921693909216929092179190911790555182907f390e2443db2609abb808aba53f1e4a5b05f268c82447ffa11293915b96be9852906101fb9084815260200190565b80356001600160a01b0381168114610421575f5ffd5b919050565b5f60208284031215610436575f5ffd5b61043f8261040b565b9392505050565b5f5f60408385031215610457575f5ffd5b6104608361040b565b915060208301358015158114610474575f5ffd5b809150509250929050565b5f6020828403121561048f575f5ffd5b5035919050565b5f5f604083850312156104a7575f5ffd5b5050803592602090910135915056fea2646970667358221220f603c2e82d06da7dd3ee02d74956a0b0806847ddbdd82b70ab0fe2953a1d979964736f6c63430008250033"
+}

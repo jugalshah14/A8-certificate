@@ -1,0 +1,396 @@
+/* Certificate page. Ported from the reference templates (certificate-templates/*.html).
+   Everything is scoped under .page so it does not leak into the admin screens.
+   Event colours arrive as CSS variables set on .page from the event's theme:
+   --t-primary, --t-primary-deep, --t-accent, --t-accent-soft, --t-ink,
+   --t-surface, --t-surface-soft, --t-heading-font. */
+
+:where(.page,.page *,.lb,.lb *){box-sizing:border-box;margin:0;padding:0}
+:where(.page img,.lb img){display:block;max-width:100%}
+:where(.page a){color:inherit;text-decoration:none}
+:where(.page button,.lb button){font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:where(.page ul,.page ol){list-style:none}
+
+.page{
+  --ink:var(--t-ink);--ink-75:color-mix(in srgb,var(--t-ink) 75%,transparent);--ink-55:color-mix(in srgb,var(--t-ink) 55%,transparent);--ink-12:color-mix(in srgb,var(--t-ink) 12%,transparent);
+  --maroon:var(--t-primary);--maroon-deep:var(--t-primary-deep);--maroon-06:color-mix(in srgb,var(--t-primary) 6%,transparent);
+  --blush:var(--t-surface);--blush-2:var(--t-surface-soft);--gold:var(--t-accent);--line:#dbdbdb;--ease:cubic-bezier(.22,.8,.2,1);
+  --saffron:var(--t-accent);--saffron-soft:var(--t-accent-soft);
+  --foil:linear-gradient(135deg,#8a6420 0%,#e9c878 28%,#b8862e 48%,#f6dfa6 64%,#9a7228 100%);--metal-deep:#8a6420;--foil-soft:linear-gradient(100deg,#e9d3a0 0%,#f7e8c2 30%,#e2c27e 52%,#f9edcf 70%,#ddbb72 100%);--foil-ink:#4a3508;--foil-line:#8a642059;
+  font-family:"Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:var(--ink);-webkit-font-smoothing:antialiased;background:#fff;min-height:100vh;line-height:1.6;overflow-x:hidden}
+/* Court-line band; drawn as a separate layer so its colour follows the theme. */
+.page .lfBottom::before{content:"";position:absolute;top:0;left:0;right:0;height:10px;background:var(--t-primary)}
+.page .lfBottom::after{content:"";position:absolute;top:0;left:0;right:0;height:10px;background:var(--t-accent);opacity:.9;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30' viewBox='0 0 120 30'%3E%3Cpath d='M0 3H120M0 27H120' stroke='%23000' stroke-width='1.4' stroke-dasharray='6 4' fill='none'/%3E%3Cg stroke='%23000' stroke-width='1.6' fill='none'%3E%3Cpath d='M12 8V22M18 8V22'/%3E%3Cpath d='M60 6V24' stroke-width='2.4'/%3E%3Cpath d='M102 8V22M108 8V22'/%3E%3Ccircle cx='60' cy='15' r='4.5'/%3E%3C/g%3E%3C/svg%3E") repeat-x center/auto 100%;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30' viewBox='0 0 120 30'%3E%3Cpath d='M0 3H120M0 27H120' stroke='%23000' stroke-width='1.4' stroke-dasharray='6 4' fill='none'/%3E%3Cg stroke='%23000' stroke-width='1.6' fill='none'%3E%3Cpath d='M12 8V22M18 8V22'/%3E%3Cpath d='M60 6V24' stroke-width='2.4'/%3E%3Cpath d='M102 8V22M108 8V22'/%3E%3Ccircle cx='60' cy='15' r='4.5'/%3E%3C/g%3E%3C/svg%3E") repeat-x center/auto 100%}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.label{letter-spacing:.28em;text-transform:uppercase;font-size:11px;font-weight:600}
+.box{max-width:900px;margin:0 auto}
+
+/* top bar (gold foil, as live) */
+.top{z-index:50;position:sticky;top:0;border-bottom:1px solid var(--foil-line);background-image:var(--foil-soft);background-size:220% 100%;animation:foil 9s ease-in-out infinite alternate}
+@keyframes foil{0%{background-position:0% center}100%{background-position:100% center}}
+.topIn{justify-content:space-between;align-items:center;gap:16px;height:84px;display:flex;position:relative}
+.emb{--h:64px;height:var(--h);width:calc(var(--h)*1.1705);flex:0 0 auto;display:block;position:relative;overflow:hidden}
+.emb img{max-width:none;width:calc(var(--h)*3.1008);left:calc(var(--h)*-.9612);top:calc(var(--h)*-.5581);position:absolute}
+.sponsorMark{object-fit:contain;width:auto;max-width:180px;height:64px;display:block}
+.rankMid{text-align:center;color:var(--foil-ink);white-space:nowrap;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.rankMid small{letter-spacing:.34em;text-transform:uppercase;opacity:.72;font-size:10px;font-weight:600;display:block}
+.rankMid b{letter-spacing:.26em;text-transform:uppercase;justify-content:center;align-items:center;gap:14px;margin-top:3px;font-size:20px;font-weight:500;display:flex}
+.rankMid b i{opacity:.45;background:currentcolor;width:36px;height:1px}
+
+/* certificate tiers: gold (winner, default), silver (1st runner-up), bronze (2nd runner-up),
+   rose (participant and judge — no rank, so no metal). Values from the live template. */
+.page.silver{--foil:linear-gradient(135deg,#8e9196 0%,#f1f2f4 28%,#b4b7bc 48%,#fff 64%,#93969b 100%);--metal-deep:#5e6166;--foil-soft:linear-gradient(100deg,#d9dbdf 0%,#f4f5f7 30%,#cdd0d4 52%,#fafafb 70%,#c9ccd0 100%);--foil-ink:#33363a;--foil-line:rgba(110,113,118,.35);--accent-light:#e6e8eb;--accent-mid:#c9ccd0}
+.page.bronze{--foil:linear-gradient(135deg,#7a4527 0%,#e2a37a 28%,#a8683f 48%,#f0c3a2 64%,#84502f 100%);--metal-deep:#8a4e2a;--foil-soft:linear-gradient(100deg,#e3bfa4 0%,#f5ddcb 30%,#d8a988 52%,#f8e6d8 70%,#d2a07c 100%);--foil-ink:#4b2a14;--foil-line:rgba(132,80,47,.35);--accent-light:#f3d3bb;--accent-mid:#e2a37a}
+.page.rose{--foil:linear-gradient(135deg,#7a2a3a 0%,#e8b9b0 28%,#a5505e 48%,#f3d6cf 64%,#80303f 100%);--metal-deep:#600016;--foil-soft:linear-gradient(100deg,#f1dcd3 0%,#fbefe8 30%,#ead0c5 52%,#fdf4ef 70%,#e6c7bb 100%);--foil-ink:#4a0011;--foil-line:rgba(96,0,22,.22);--accent-light:#f3d0c6;--accent-mid:#e8b9b0}
+.lfAward.long{font-size:min(28px,15cqw);line-height:1.08}
+.lfAward.xlong{font-size:min(26px,11.5cqw);line-height:1.08}
+
+/* hero (as live) */
+.hero{--art:clamp(150px,26vh,250px);background:linear-gradient(180deg,var(--blush) 0%,var(--blush-2) 70%);position:relative;overflow:hidden}
+.heroGrid{z-index:2;padding-top:calc((var(--art) - 48px)/2 + 40px);padding-bottom:calc((var(--art) - 48px)/2 + 84px);grid-template-columns:minmax(0,1.45fr) 110px minmax(0,1fr);align-items:center;gap:40px;display:grid;position:relative}
+.thumbs{flex-direction:column;gap:14px;display:flex}
+.thumb{aspect-ratio:1/1;background:var(--blush);box-shadow:0 14px 28px -18px color-mix(in srgb,var(--maroon) 45%,transparent);position:relative;overflow:hidden;cursor:zoom-in;display:block;width:100%}
+.thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.thumb:hover img{transform:scale(1.02)}
+.thumb::after{content:"";pointer-events:none;border:1px solid rgba(255,255,255,.55);position:absolute;inset:5px}
+.copy h1{letter-spacing:-.02em;font-size:clamp(34px,3.05vw,46px);font-weight:400;line-height:1.06}
+.copy h1 span{color:var(--maroon);display:block}
+.rule{max-width:360px;height:30px;margin:28px 0 22px;position:relative}
+.rule::before{content:"";background:linear-gradient(90deg,var(--maroon),var(--gold) 55%,transparent);height:1px;position:absolute;top:50%;left:0;right:0}
+.rule svg{background:var(--blush-2);width:30px;height:30px;padding:0 2px;position:absolute;top:50%;left:0;transform:translateY(-50%)}
+.kind{letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);font-size:13px;font-weight:600}
+.when{letter-spacing:.14em;margin-top:6px}
+.actions{grid-template-columns:1fr;gap:12px;max-width:420px;margin-top:30px;display:grid}
+.btn{background:var(--maroon);color:#fff;letter-spacing:.24em;text-transform:uppercase;height:50px;transition:all .35s var(--ease);align-items:center;justify-content:center;gap:12px;padding:0 18px;font-size:12px;font-weight:600;display:inline-flex;white-space:nowrap}
+.btn:hover{background:var(--maroon-deep);transform:translateY(-1px)}
+.btn svg{width:16px;height:16px}
+.art{z-index:1;aspect-ratio:1672/659;pointer-events:none;position:absolute;bottom:0;left:0;right:0}
+.art img{object-fit:cover;object-position:center bottom;width:100%;height:100%;position:absolute;inset:0;-webkit-mask-image:linear-gradient(transparent 0%,rgba(0,0,0,.06) 35%,rgba(0,0,0,.16) 55%,rgba(0,0,0,.34) 72%,rgba(0,0,0,.62) 86%,#000 100%);mask-image:linear-gradient(transparent 0%,rgba(0,0,0,.06) 35%,rgba(0,0,0,.16) 55%,rgba(0,0,0,.34) 72%,rgba(0,0,0,.62) 86%,#000 100%)}
+
+/* NEW · winner photo in an IPL-style L-frame, flat edges like the live certificate frame */
+.lf{position:relative;display:grid;grid-template-columns:32% 1fr;background:var(--maroon);box-shadow:0 2px 0 #392a220a,0 46px 80px -38px color-mix(in srgb,var(--maroon) 42%,transparent),0 18px 34px -20px #392a2247}
+.lfSide{container-type:inline-size;position:relative;display:flex;flex-direction:column;gap:14px;padding:22px 20px;color:#fff;border-right:3px solid transparent;border-image:var(--foil) 1}
+.lfEmb{width:64px;height:64px;background:#fffbf6;display:grid;place-items:center;overflow:hidden}
+.lfEmb .emb{--h:52px}
+.lfAward{font-size:30px;font-weight:600;letter-spacing:.02em;line-height:1}
+.lfRound{display:block;margin-top:8px;color:var(--accent-light,#e9d3a0);font-size:10px;letter-spacing:.24em}
+.lfRule{height:1px;background:linear-gradient(90deg,var(--accent-mid,#e2c27e),transparent)}
+.lfQ{position:relative;padding-top:20px;font-size:15px;font-weight:300;line-height:1.5;color:#fdf6f1}
+.lfQ::before{content:"\201C";position:absolute;top:-8px;left:-2px;font-size:44px;font-weight:600;line-height:1;color:var(--accent-mid,#e2c27e)}
+.lfBy{margin-top:auto;color:var(--accent-light,#e9d3a0);font-size:9.5px;letter-spacing:.2em}
+.lfPhoto{position:relative;aspect-ratio:1/1;background:var(--blush);overflow:hidden;cursor:zoom-in}
+.lfPhoto img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+.lfBug{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;background:rgba(255,255,255,.94);color:var(--ink);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+.lfBug img{width:20px;height:20px;border-radius:5px}
+.lfBottom{grid-column:1/-1;position:relative;display:flex;align-items:stretch;background:var(--foil-soft);color:var(--foil-ink);padding-top:10px}
+.lfName{flex:1;min-width:0;padding:14px 20px}
+.lfName b{display:block;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.1;color:var(--maroon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lfName span{display:block;margin-top:5px;font-size:10px;letter-spacing:.22em;opacity:.8}
+.lfSpon{flex:none;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#fff;border-left:1px solid var(--foil-line)}
+.lfSpon .label{font-size:8.5px;letter-spacing:.18em;color:var(--ink-55);max-width:96px;line-height:1.45}
+.lfSpon img{height:46px;width:auto}
+
+/* NEW · Authentication Sponsor block in the first fold (live "gift" style) */
+.gift{border:1px dashed color-mix(in srgb,var(--maroon) 50%,transparent);background:var(--maroon-06);max-width:420px;color:var(--maroon);transition:background .3s var(--ease);align-items:center;gap:14px;margin-top:14px;padding:12px 16px;font-size:14px;line-height:1.35;display:flex}
+.gift:hover{background:color-mix(in srgb,var(--maroon) 12%,transparent)}
+.gift img{width:44px;height:44px;flex:none}
+.gift .t{flex:1;min-width:0;text-align:left}
+.gift .label{display:block;font-size:9.5px;letter-spacing:.24em;color:var(--gold);margin-bottom:3px}
+.gift svg{flex-shrink:0;width:18px;height:18px}
+
+/* authenticated card (as live) */
+.auth{z-index:5;margin-top:-84px;position:relative}
+.acard{border:1px solid var(--line);text-align:left;background:#fff;grid-template-columns:auto 1fr auto;align-items:center;gap:26px;width:100%;max-width:900px;margin:0 auto;padding:30px 34px;transition:border-color .35s,box-shadow .35s;display:grid;box-shadow:rgba(57,42,34,.4) 0 30px 60px -40px}
+.acard:hover{border-color:color-mix(in srgb,var(--maroon) 35%,transparent)}
+.aIc{background:var(--maroon-06);width:62px;height:62px;color:var(--maroon);border-radius:50%;place-items:center;display:grid;position:relative}
+.aIc::after{content:"";border:1px dashed color-mix(in srgb,var(--maroon) 32%,transparent);border-radius:50%;animation:spin 26s linear infinite;position:absolute;inset:-7px}
+@keyframes spin{100%{transform:rotate(360deg)}}
+.aIc svg{width:28px;height:28px}
+.aIc svg.a8mark{width:36px;height:auto}
+.aT{letter-spacing:-.01em;font-size:24px;font-weight:400;line-height:1.25;display:block}
+.aS{color:var(--ink-75);margin-top:6px;font-size:14px;font-weight:300;line-height:1.4;display:block}
+.aGo{background:var(--maroon);color:#fff;width:46px;height:46px;transition:transform .45s var(--ease);border-radius:50%;place-items:center;display:grid}
+.aGo svg{width:22px;height:22px;transition:transform .3s}
+.acard[aria-expanded="true"] .aGo svg{transform:rotate(180deg)}
+.proof{border:1px solid var(--line);background:#fff;max-width:900px;margin:12px auto 0}
+.proof[hidden]{display:none}
+.proofRow{border-bottom:1px solid var(--line);justify-content:space-between;align-items:center;gap:16px;padding:12px 24px;display:flex;font-size:14px}
+.proofLabel{color:var(--ink-55)}
+.proofValue{text-align:right;color:var(--ink)}
+.proofFoot{padding:16px 24px;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:300;color:var(--ink-75)}
+.proofFoot img{width:32px;height:32px;border-radius:8px;flex:none}
+
+
+/* certification partner (below the authenticated card) */
+.cpart{border:1px solid color-mix(in srgb,var(--maroon) 30%,transparent);background:linear-gradient(180deg,#fff 0%,var(--blush-2) 100%);text-align:center;padding:34px 32px 36px;box-shadow:rgba(57,42,34,.4) 0 30px 60px -48px}
+.cpart .label{display:block;color:var(--ink-55);font-size:11px}
+.cpartBrand{display:inline-flex;align-items:center;gap:14px;margin:18px 0 16px}
+.cpartName{font-size:42px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.cpart p{max-width:640px;margin:0 auto;color:var(--ink-75);font-size:16px;font-weight:300;line-height:1.6}
+
+/* Authentic8 symbol (black, no box) — sizes per place */
+.a8sym{display:block;flex:none;height:auto}
+.symBug{width:26px}
+.symProof{width:40px}
+.symStrip{width:38px}
+.symPowered{width:24px}
+.symPartner{width:84px}
+
+/* section divider (as live) */
+.sec{padding:72px 0 0}
+.divider{align-items:center;gap:20px;max-width:900px;margin:0 auto 34px;display:flex}
+.divider::before,.divider::after{content:"";background:var(--line);flex:1 1 0%;height:1px}
+.divider .label{color:var(--ink-55);align-items:center;gap:14px;display:flex}
+
+/* NEW · winner & event details, flat bordered grid */
+.facts{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.fact{grid-column:span 2;background:linear-gradient(180deg,#fff 0%,var(--blush-2) 100%);padding:22px 24px;display:flex;flex-direction:column;gap:6px}
+.fact .label{color:var(--ink-55);font-size:10px;letter-spacing:.24em;display:flex;align-items:center;gap:8px}
+.fact .label svg{width:15px;height:15px;color:var(--gold)}
+.fact b{font-size:18px;font-weight:600;line-height:1.3;color:var(--ink)}
+.fact.win{background:var(--maroon)}
+.fact.win .label{color:var(--accent-light,#e9d3a0)} .fact.win .label svg{color:var(--accent-light,#e9d3a0)}
+.fact.win b{color:#fff;font-size:22px}
+.fact:nth-child(n+4){grid-column:span 3}
+
+/* sponsor card (as live) */
+.scard{background:linear-gradient(180deg,#fff 0%,var(--blush-2) 100%);max-width:900px;color:var(--ink);border:1px solid var(--line);grid-template-columns:1fr;margin:0 auto;display:grid;position:relative;overflow:hidden}
+.scardPhoto{grid-template-columns:minmax(0,1fr) 400px}
+.scard .body{flex-direction:column;justify-content:center;gap:18px;padding:30px 40px;display:flex}
+.scardLogo{object-fit:contain;object-position:left center;width:auto;max-width:280px;height:76px}
+.scard h3{color:var(--ink-75);font-size:20px;font-weight:300;line-height:1.35}
+.buy{background:var(--maroon);color:#fff;letter-spacing:.02em;height:50px;transition:background .3s var(--ease);justify-content:center;align-items:center;gap:10px;padding:0 30px;font-size:15px;font-weight:500;display:inline-flex}
+.buy svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+.ph{aspect-ratio:1/1;background:#fff;align-self:start;position:relative}
+.ph img{object-fit:contain;width:100%;height:100%;transition:transform 1.4s var(--ease);position:absolute;inset:0}
+.scardLink{cursor:pointer;transition:border-color .35s var(--ease),box-shadow .35s var(--ease),transform .35s var(--ease)}
+.scardLink:hover{border-color:color-mix(in srgb,var(--maroon) 35%,transparent);transform:translateY(-2px);box-shadow:rgba(57,42,34,.45) 0 24px 50px -40px}
+.scardLink:hover .buy{background:var(--maroon-deep)}
+.scardLink:hover .buy svg{transform:translate(4px)}
+.cardLink{z-index:1;position:absolute;inset:0}
+.coupon{flex-direction:column;align-items:flex-start;gap:6px;display:flex}
+.couponTag{color:var(--gold);letter-spacing:.24em;text-transform:uppercase;align-items:center;gap:10px;font-size:11px;font-weight:600;display:inline-flex}
+.couponTag::before{content:"";background:var(--gold);width:22px;height:1px}
+.couponOffer{letter-spacing:-.02em;color:var(--maroon);margin-top:2px;font-size:36px;font-weight:600;line-height:1.05}
+.couponTerms{color:var(--ink-75);font-size:15px;font-weight:400}
+.couponValid{letter-spacing:.04em;color:var(--ink-55);font-size:12px;font-weight:500}
+.ticket{z-index:2;border:1.5px dashed color-mix(in srgb,var(--maroon) 55%,transparent);background:#fff;align-items:stretch;margin-top:8px;display:inline-flex;position:relative}
+.ticketCode{background:var(--maroon-06);color:var(--maroon);letter-spacing:.18em;user-select:all;align-items:center;padding:0 20px;font-size:18px;font-weight:700;display:flex}
+.copyCode{border-left:1.5px dashed color-mix(in srgb,var(--maroon) 55%,transparent);height:48px;color:var(--maroon);letter-spacing:.08em;text-transform:uppercase;background:#fff;align-items:center;gap:8px;padding:0 18px;font-size:13px;font-weight:600;transition:background .2s,color .2s;display:inline-flex}
+.copyCode:hover{background:var(--blush)}
+.copyCode svg{width:16px;height:16px}
+.copied,.copied:hover{background:var(--maroon);color:#fff}
+
+/* NEW · moment in two columns (live "remarkCard" style) */
+.moment{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
+.remarkCard{border-left:3px solid var(--maroon);background:#fff;padding:26px 30px 28px;box-shadow:rgba(57,42,34,.4) 0 30px 60px -48px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.remarkHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.remarkLabel{color:var(--maroon)}
+.chip{font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:4px 8px;border:1px solid var(--line);color:var(--ink-55);white-space:nowrap}
+.remarkText{white-space:pre-line;overflow-wrap:anywhere;color:var(--ink);font-size:16px;font-weight:300;line-height:1.75}
+.remarkBy{margin-top:16px;color:var(--ink-55);font-size:10px}
+
+/* NEW · other sponsors, half width (live scard style) */
+.half{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:0 auto}
+.half .scard .body{padding:28px 30px;gap:16px}
+.half .scardLogo{height:56px;max-width:220px}
+.half .scardLogo.three{height:34px;margin:11px 0}
+.half .buy{align-self:flex-start;height:46px;padding:0 24px}
+
+/* NEW · partner logo strip (flat, bordered) */
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.strip li{min-width:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:14px;padding:22px 12px 18px;text-align:center}
+.strip .lg{height:56px;display:flex;align-items:center;justify-content:center}
+.strip .lg img{max-height:52px;max-width:min(130px,100%);width:auto;height:auto}
+.strip .a8{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+.strip .a8 img{width:30px;height:30px;border-radius:8px}
+.strip .label{font-size:9px;letter-spacing:.18em;color:var(--ink-55);min-height:2.9em;display:flex;align-items:center;line-height:1.45}
+
+/* judges (as live) */
+.judgeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;max-width:900px;margin:0 auto;display:grid}
+.judgeCard{border:1px solid var(--line);transition:border-color .35s var(--ease),box-shadow .35s var(--ease);background:#fff;flex-direction:column;display:flex;overflow:hidden}
+.judgeCard:hover{border-color:color-mix(in srgb,var(--maroon) 30%,transparent);box-shadow:rgba(57,42,34,.45) 0 24px 50px -40px}
+.judgePh{aspect-ratio:4/5;background:var(--blush);display:block;position:relative;overflow:hidden}
+.judgePh img{object-fit:cover;object-position:50% 28%;width:100%;height:100%;transition:transform 1.2s var(--ease);position:absolute;inset:0}
+.judgeCard:hover .judgePh img{transform:scale(1.03)}
+.judgeBody{flex-direction:column;gap:4px;padding:16px 18px 20px;display:flex}
+.judgeName{color:var(--ink);font-size:18px;font-weight:600;line-height:1.25}
+.judgeTitle{color:var(--ink-75);font-size:13px;font-weight:300;line-height:1.5}
+
+/* closing (as live) */
+.closing{background:linear-gradient(180deg,#fff 0%,var(--blush-2) 45%);margin-top:40px;position:relative}
+.closing img{aspect-ratio:1672/489;object-fit:cover;object-position:center 100%;width:100%;max-width:1500px;margin:0 auto;display:block;-webkit-mask-image:linear-gradient(transparent 0,#000 14%);mask-image:linear-gradient(transparent 0,#000 14%)}
+.powered{color:var(--ink-55);justify-content:center;align-items:center;gap:8px;padding:28px 0 36px;font-size:12px;display:flex}
+.powered img{width:16px;height:16px;border-radius:4px}
+
+/* lightbox */
+.lb{border:0;padding:0;background:transparent;max-width:96vw;margin:auto}
+.lb::backdrop{background:rgba(57,42,34,.88)}
+.lb img{max-height:88vh;width:auto;max-width:96vw}
+.lb .x{position:fixed;top:14px;right:14px;width:46px;height:46px;border-radius:50%;background:#fff;color:var(--maroon);font-size:22px}
+
+.rv{animation:rise .9s var(--ease) both}.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+@keyframes rise{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:none}}
+
+/* ===== responsive (live breakpoints) ===== */
+@media (max-width:1080px){
+  .hero{--art:200px}
+  .heroGrid{grid-template-columns:1fr;gap:28px;padding-top:32px}
+  .lfWrap{max-width:640px;width:100%;margin:0 auto}
+  .thumbs{flex-direction:row;max-width:640px;width:100%;margin:0 auto}
+  .thumbs>*{flex:1 1 0%}
+  .copy{text-align:center;order:3}
+  .actions,.gift{margin-left:auto;margin-right:auto}
+  .rule{margin-left:auto!important;margin-right:auto!important}
+  .rule::before{background:linear-gradient(90deg,transparent,var(--gold) 28%,var(--maroon) 50%,var(--gold) 72%,transparent)}
+  .rule svg{left:50%;transform:translate(-50%,-50%)}
+}
+@media (max-width:760px){
+  .sec{padding-top:52px}
+  .judgeGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .judgeBody{padding:10px 12px 14px}
+  .judgeName{font-size:15px}
+  .judgeTitle{font-size:12px}
+  .facts{grid-template-columns:1fr 1fr}
+  .fact,.fact:nth-child(n+4){grid-column:auto}
+  .fact.win{grid-column:1/-1}
+  .half{grid-template-columns:1fr}
+  .strip{grid-template-columns:1fr 1fr}
+  .strip li:last-child{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .wrap{padding-left:16px;padding-right:16px}
+  .topIn{height:68px}
+  .emb{--h:44px}
+  .sponsorMark{max-width:120px;height:44px}
+  .rankMid{white-space:normal;width:calc(100% - 168px)}
+  .rankMid small{letter-spacing:.12em;font-size:7.5px}
+  .rankMid b{letter-spacing:.1em;text-wrap:balance;gap:0;margin-top:2px;font-size:11px;line-height:1.3}
+  .rankMid b i{display:none}
+  .hero{--art:96px}
+  .heroGrid{gap:14px;padding-top:16px}
+  .copy h1{font-size:30px}
+  .rule{margin:10px 0 8px}
+  .actions{margin-top:18px}
+  .btn{width:100%;height:46px;letter-spacing:.16em}
+  .thumbs{gap:10px}
+  .auth{margin-top:-64px}
+  .acard{grid-template-columns:auto 1fr;gap:16px;padding:22px 18px}
+  .aGo{display:none}
+  .aIc{width:48px;height:48px}
+  .aIc svg{width:22px;height:22px}
+  .aIc svg.a8mark{width:28px;height:auto}
+  .aT{font-size:19px}
+  .aS{margin-top:5px}
+  .proofRow,.proofFoot{padding-left:16px;padding-right:16px}
+  .fact{padding:16px}
+  .fact b{font-size:15px}
+  .fact.win b{font-size:19px}
+  .scardPhoto{grid-template-columns:1fr}
+  .scardPhoto .ph{order:-1}
+  .scard .body{text-align:center;align-items:center;gap:16px;padding:22px 18px}
+  .scard .body>div{flex-direction:column;align-items:center;width:100%;display:flex}
+  .scardLogo{object-position:center center;height:64px}
+  .coupon{align-items:center;gap:4px;width:100%}
+  .couponTag{letter-spacing:.14em;font-size:10px}
+  .couponTag::before{display:none}
+  .couponTerms{font-size:14px}
+  .scard h3{font-size:17px}
+  .buy{width:100%;height:48px}
+  .half .buy{align-self:stretch}
+  .couponOffer{font-size:32px}
+  .ticket{width:100%}
+  .ticketCode{letter-spacing:clamp(.06em,.5vw,.18em);flex:1 1 0%;justify-content:center;min-width:0;padding:0 clamp(8px,3vw,12px);font-size:clamp(12px,4.4vw,16px)}
+  .copyCode{flex-shrink:0;gap:clamp(4px,1.6vw,8px);height:46px;padding:0 clamp(8px,3.5vw,16px);font-size:clamp(11px,3.4vw,13px)}
+  .divider{gap:10px;margin-bottom:22px}
+  .divider .label{letter-spacing:.14em;white-space:nowrap;gap:8px;font-size:9.5px}
+  .remarkCard{padding:20px 18px 22px}
+  .cpart{padding:24px 18px 26px}
+  .symPartner{width:64px}
+  .symBug{width:20px}
+  .cpartBrand{gap:10px;margin:14px 0 12px}
+      .cpartName{font-size:32px}
+  .cpart p{font-size:14px}
+  .remarkText{font-size:15px}
+  /* L-frame on phones */
+  .lfSide{padding:14px 12px;gap:10px}
+  .lfEmb{width:48px;height:48px}
+  .lfEmb .emb{--h:38px}
+  .lfAward{font-size:21px}
+  .lfRound{font-size:8px;letter-spacing:.16em;margin-top:6px}
+  .lfQ{font-size:12.5px;padding-top:16px}
+  .lfQ::before{font-size:34px;top:-6px}
+  .lfBy{font-size:8px;letter-spacing:.14em}
+  .lfPhoto{aspect-ratio:4/5}
+  .lfBug{top:8px;right:8px;font-size:8.5px;padding:4px 8px 4px 4px;gap:6px}
+  .lfBug img{width:16px;height:16px;border-radius:4px}
+  .lfName{padding:10px 12px}
+  .lfName b{font-size:20px}
+  .lfName span{font-size:8px;letter-spacing:.14em}
+  .lfSpon{flex-direction:column;justify-content:center;gap:4px;padding:6px 10px}
+  .lfSpon .label{font-size:6.5px;letter-spacing:.12em;max-width:none;text-align:center}
+  .lfSpon img{height:32px}
+}
+@media (prefers-reduced-motion:reduce){.page *{transition:none!important;animation:none!important}}
+
+/* ===== Event style (generalised from the kabaddi template) ===== */
+/* Participant and official ("rose" tier): foil in the event's accent colour. Winners keep gold, silver and bronze. */
+.page.rose{--foil:linear-gradient(135deg,color-mix(in srgb,var(--t-accent) 75%,#000) 0%,var(--t-accent-soft) 28%,var(--t-accent) 48%,color-mix(in srgb,var(--t-accent-soft) 45%,#fff) 64%,color-mix(in srgb,var(--t-accent) 80%,#000) 100%);--metal-deep:color-mix(in srgb,var(--t-accent) 80%,#000);
+  --foil-soft:linear-gradient(100deg,color-mix(in srgb,var(--t-accent-soft) 60%,#fff) 0%,var(--t-surface) 30%,color-mix(in srgb,var(--t-accent-soft) 75%,#fff) 52%,var(--t-surface-soft) 70%,color-mix(in srgb,var(--t-accent-soft) 85%,#fff) 100%);--foil-ink:color-mix(in srgb,var(--t-accent) 45%,#000);
+  --foil-line:color-mix(in srgb,var(--t-accent) 30%,transparent);--accent-light:color-mix(in srgb,var(--t-accent-soft) 60%,#fff);--accent-mid:var(--t-accent-soft)}
+/* Header: a scoreboard bar in the primary colour with an accent stripe. */
+.page .top{background:var(--t-primary);background-image:linear-gradient(90deg,var(--t-primary-deep),var(--t-primary) 50%,var(--t-primary-deep));animation:none;border-bottom:4px solid var(--saffron)}
+.page .rankMid{color:#fff}
+.page .rankMid small{color:var(--saffron-soft);opacity:1}
+.page .rankMid b,.page h1,.page .lfAward,.page .lfName b,.page .fact b{font-family:var(--t-heading-font),"Noto Sans",sans-serif}
+.page.condensed .rankMid b,.page.condensed h1,.page.condensed .lfAward,.page.condensed .lfName b,.page.condensed .fact b{text-transform:uppercase}
+.page .rankMid b{font-weight:600;letter-spacing:.12em}
+.page .rankMid b i{background:var(--saffron);opacity:1}
+:where(.page) h1{font-weight:700;letter-spacing:.005em;line-height:1}
+.page .lfAward{font-weight:700;letter-spacing:.04em}
+.page .lfName b{font-weight:700;letter-spacing:.01em;color:var(--maroon)}
+.page .lf{background:var(--t-primary) linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.07) calc(50% - 1px),rgba(255,255,255,.07) calc(50% + 1px),transparent calc(50% + 1px))}
+.page .lfSide{background:linear-gradient(160deg,color-mix(in srgb,var(--t-accent) 22%,transparent),transparent 55%),repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.05) 46px 48px)}
+.page .lfQ{color:#fff}
+.page .fact.win{background:var(--t-primary);border-bottom:4px solid var(--saffron)}
+.page .fact.win .label,.page .fact.win .label svg{color:var(--saffron-soft)}
+.page .fact b{font-weight:600;letter-spacing:.02em}
+.page .btn{background:var(--saffron);color:#fff}
+.page .btn:hover{background:color-mix(in srgb,var(--t-accent) 85%,#000)}
+.page .divider .label{color:var(--maroon)}
+.page .remarkCard{border-left-color:var(--saffron)}
+.page ::selection{background:var(--saffron);color:#fff}
+.page .judgeGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:760px){.page .judgeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ===== Additions: verification states, missing-image fallbacks ===== */
+.page .aIc.bad{background:#b4231810;color:#b42318}
+.page .aIc.warn{background:#b5470010;color:#b54700}
+.page .acard.bad{border-color:#b4231866}
+.page .proofValue code{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.page .proofValue a{text-decoration:underline}
+.page .statusPill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.page .statusPill.ok{background:#e7f6ec;color:#146c2e}
+.page .statusPill.bad{background:#fdecea;color:#b42318}
+.page .statusPill.warn{background:#fff4e5;color:#8a4b00}
+.page .revokedBanner{background:#b42318;color:#fff;text-align:center;padding:10px 16px;font-size:14px;font-weight:600;letter-spacing:.04em}
+.page .emb.noimg{display:none}
+.page.state{display:grid;place-items:center;text-align:center;padding:40px 16px}
+.page.state h1{font-size:28px;margin-bottom:10px}
+.page.state p{color:var(--ink-75)}
+.page .facts .fact.s2{grid-column:span 2}
+.page .facts .fact.s3{grid-column:span 3}
+.page .facts .fact.s6{grid-column:span 6}
+.page .strip{grid-template-columns:repeat(var(--cols,5),1fr)}
+@media (max-width:760px){
+  .page .facts .fact.s2,.page .facts .fact.s3,.page .facts .fact.s6{grid-column:auto}
+  .page .facts .fact.win,.page .facts .fact.mfull{grid-column:1/-1}
+  .page .strip{grid-template-columns:1fr 1fr}
+}
+/* Award text fits the side panel: --chars is the longest line, the factor is the font's average glyph width. */
+.page .lfAward{--glyph:.68;white-space:nowrap;font-size:min(30px,calc(100cqw / (var(--chars,8) * var(--glyph))))}
+.page.condensed .lfAward{--glyph:.6}
+@media (max-width:640px){.page .lfAward{font-size:min(21px,calc(100cqw / (var(--chars,8) * var(--glyph))))}}
+.page .judgePh .initials{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;font-weight:600;color:var(--maroon);opacity:.55;letter-spacing:.04em}

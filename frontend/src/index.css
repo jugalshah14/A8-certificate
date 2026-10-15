@@ -1,12 +1,9 @@
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #fff;
-  color: #111;
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
-main {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+body {
+  margin: 0;
+  background: #fff;
+  font-family: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
